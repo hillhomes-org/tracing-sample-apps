@@ -1,36 +1,46 @@
+# Imports
 import argparse
 import http.server
 import socketserver
 import time
 
 from opentelemetry import trace
+from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.resources import SERVICE_NAME, Resource
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
     ConsoleSpanExporter,
 )
 
-provider = TracerProvider()
-processor = BatchSpanProcessor(ConsoleSpanExporter())
-provider.add_span_processor(processor)
-
-# Sets the global default tracer provider
-trace.set_tracer_provider(provider)
-
-tracer = trace.get_tracer(__name__)
-
+# Get arguments and settings
 parser = argparse.ArgumentParser(
     prog="Simple Python Proxy Server",
     description="Serves a simple web server at the defined port and proxies it",
 )
 parser.add_argument("-p", "--port", default=8080)
 parser.add_argument("-u", "--url", default="https://www.google.com")
+parser.add_argument("-o", "--oltp", default=None)
 args = parser.parse_args()
 
 PORT = int(args.port)
 PROXY = args.url
+OLTP = args.oltp
+
+# Set tracing configuration
+resource = Resource(attributes={SERVICE_NAME: "python-proxy"})
+
+provider = TracerProvider(resource=resource)
+processor = BatchSpanProcessor(ConsoleSpanExporter())
+if OLTP is not None:
+    processor = BatchSpanProcessor(OTLPSpanExporter(endpoint=OLTP))
+
+provider.add_span_processor(processor)
+trace.set_tracer_provider(provider)
+tracer = trace.get_tracer(__name__)
 
 
+# Define proxy server
 def getProxyHandler(proxy):
     """
     Simple funtion that creates a `SimpleHTTPRequestHandler` that proxies
@@ -59,4 +69,5 @@ with socketserver.TCPServer(("", PORT), getProxyHandler(PROXY)) as httpd:
     print(20 * "-")
     print("Serving at port", PORT)
     print("Forwarding to", PROXY)
+    print("OLTP endpoint is set to", OLTP)
     httpd.serve_forever()

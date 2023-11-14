@@ -8,7 +8,7 @@ WORKDIR /app
 COPY . /app
 
 # Install dependencies
-RUN pip install opentelemetry-sdk
+RUN pip install opentelemetry-sdk opentelemetry-exporter-otlp-proto-grpc
 
 # Make port 8080 available to the world outside this container
 EXPOSE 8080

@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 opentelemetry-distro = "*"
 opentelemetry-sdk = "*"
+opentelemetry-exporter-otlp-proto-grpc = "*"
 
 [dev-packages]
 black = "*"
