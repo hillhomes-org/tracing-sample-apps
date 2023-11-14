@@ -1,6 +1,23 @@
 import argparse
 import http.server
 import socketserver
+import time
+
+from opentelemetry import trace
+from opentelemetry.sdk.trace import TracerProvider
+from opentelemetry.sdk.trace.export import (
+    BatchSpanProcessor,
+    ConsoleSpanExporter,
+)
+
+provider = TracerProvider()
+processor = BatchSpanProcessor(ConsoleSpanExporter())
+provider.add_span_processor(processor)
+
+# Sets the global default tracer provider
+trace.set_tracer_provider(provider)
+
+tracer = trace.get_tracer(__name__)
 
 parser = argparse.ArgumentParser(
     prog="Simple Python Proxy Server",
@@ -22,9 +39,17 @@ def getProxyHandler(proxy):
 
     class proxyHandler(http.server.SimpleHTTPRequestHandler):
         def do_GET(self):
-            self.send_response(301)
-            self.send_header("Location", proxy)
-            self.end_headers()
+            with tracer.start_as_current_span("root") as root_span:
+                with tracer.start_as_current_span("sleep") as span:
+                    sleep_duration = 2
+                    time.sleep(sleep_duration)
+                    span.set_attribute("sleep.duration", sleep_duration)
+
+                with tracer.start_as_current_span("proxy") as span:
+                    self.send_response(301)
+                    span.set_attribute("proxy.url", proxy)
+                    self.send_header("Location", proxy)
+                    self.end_headers()
 
     return proxyHandler
 

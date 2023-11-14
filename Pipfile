@@ -4,6 +4,8 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
+opentelemetry-distro = "*"
+opentelemetry-sdk = "*"
 
 [dev-packages]
 black = "*"
