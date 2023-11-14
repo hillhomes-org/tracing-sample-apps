@@ -48,3 +48,17 @@ Now let's try to send data to Jaeger:
 docker run -p 8080:8080 --name python-proxy --add-host host.docker.internal:host-gateway -d python-proxy -o http://host.docker.internal:4317
 ```
 Note that we need to add the `--add-host host.docker.internal:host-gateway` option in order to reach Jaeger, which is running on `localhost`, from inside our Docker container.
+
+## Docker Hub
+I created a dummy user on Docker Hub to publish the image. The username is `hillhomes`.
+```
+docker login
+docker build -t hillhomes/python-proxy:v0.0.1 .
+docker push hillhomes/python-proxy:v0.0.1
+```
+This way we can add a corresponding deployment to our Flux Repository and test our Grafana Tempo application.
+
+Hence, the app can be run as follows as well:
+```
+docker run -p 8080:8080 --name python-proxy -d hillhomes/python-proxy:v0.0.1
+```
