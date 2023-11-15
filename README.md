@@ -53,12 +53,12 @@ Note that we need to add the `--add-host host.docker.internal:host-gateway` opti
 I created a dummy user on Docker Hub to publish the image. The username is `hillhomes`.
 ```
 docker login
-docker build -t hillhomes/python-proxy:v0.0.1 .
-docker push hillhomes/python-proxy:v0.0.1
+docker build -t hillhomes/python-proxy:v0.0.2 .
+docker push hillhomes/python-proxy:v0.0.2
 ```
 This way we can add a corresponding deployment to our Flux Repository and test our Grafana Tempo application.
 
 Hence, the app can be run as follows as well:
 ```
-docker run -p 8080:8080 --name python-proxy -d hillhomes/python-proxy:v0.0.1
+docker run -p 8080:8080 --name python-proxy -d hillhomes/python-proxy:v0.0.2
 ```

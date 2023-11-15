@@ -1,8 +1,10 @@
 # Imports
 import argparse
 import http.server
+import http.client
 import socketserver
 import time
+import urllib.request
 
 from opentelemetry import trace
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
@@ -49,17 +51,17 @@ def getProxyHandler(proxy):
 
     class proxyHandler(http.server.SimpleHTTPRequestHandler):
         def do_GET(self):
-            with tracer.start_as_current_span("root") as root_span:
+            with tracer.start_as_current_span("root") as _:
                 with tracer.start_as_current_span("sleep") as span:
                     sleep_duration = 2
                     time.sleep(sleep_duration)
                     span.set_attribute("sleep.duration", sleep_duration)
 
                 with tracer.start_as_current_span("proxy") as span:
-                    self.send_response(301)
+                    self.send_response(200)
                     span.set_attribute("proxy.url", proxy)
-                    self.send_header("Location", proxy)
                     self.end_headers()
+                    self.copyfile(urllib.request.urlopen(proxy), self.wfile)
 
     return proxyHandler
 
