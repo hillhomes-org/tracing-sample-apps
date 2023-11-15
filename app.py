@@ -70,9 +70,13 @@ def getProxyHandler(proxy):
                     self.send_response(200)
                     span.set_attribute("proxy.url", proxy)
                     # Propagate trace id
-                    self.send_header("traceparent", span.get_span_context().trace_id)
+                    traceparent_id = span.get_span_context().trace_id
+                    self.send_header("traceparent", traceparent_id)
                     self.end_headers()
-                    self.copyfile(urllib.request.urlopen(proxy), self.wfile)
+                    req = urllib.request.Request(
+                        proxy, headers={"traceparent": traceparent_id}
+                    )
+                    self.copyfile(urllib.request.urlopen(req), self.wfile)
 
     return proxyHandler
 
