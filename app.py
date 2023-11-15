@@ -14,6 +14,8 @@ from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
     ConsoleSpanExporter,
 )
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
+
 
 # Get arguments and settings
 parser = argparse.ArgumentParser(
@@ -39,7 +41,7 @@ if OLTP is not None:
 
 provider.add_span_processor(processor)
 trace.set_tracer_provider(provider)
-tracer = trace.get_tracer(__name__)
+tracer = trace.get_tracer("pythonProxy.tracer")
 
 
 # Define proxy server
@@ -51,7 +53,14 @@ def getProxyHandler(proxy):
 
     class proxyHandler(http.server.SimpleHTTPRequestHandler):
         def do_GET(self):
-            with tracer.start_as_current_span("root") as _:
+            # Get current context
+            carrier = {}
+            traceparent_header = self.headers.get("traceparent")
+            if traceparent_header:
+                carrier = {"traceparent": int(traceparent_header, 16)}
+            ctx = TraceContextTextMapPropagator().extract(carrier=carrier)
+
+            with tracer.start_as_current_span("root", ctx) as _:
                 with tracer.start_as_current_span("sleep") as span:
                     sleep_duration = 2
                     time.sleep(sleep_duration)
@@ -60,6 +69,8 @@ def getProxyHandler(proxy):
                 with tracer.start_as_current_span("proxy") as span:
                     self.send_response(200)
                     span.set_attribute("proxy.url", proxy)
+                    # Propagate trace id
+                    self.send_header("traceparent", span.get_span_context().trace_id)
                     self.end_headers()
                     self.copyfile(urllib.request.urlopen(proxy), self.wfile)
 
