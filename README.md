@@ -60,5 +60,5 @@ This way we can add a corresponding deployment to our Flux Repository and test o
 
 Hence, the app can be run as follows as well:
 ```
-docker run -p 8080:8080 --name python-proxy -d hillhomes/python-proxy:v0.0.2
+docker run -p 8080:8080 --name python-proxy -d hillhomes/python-proxy:v0.0.9
 ```

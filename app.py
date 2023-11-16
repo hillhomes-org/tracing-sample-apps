@@ -57,8 +57,10 @@ def getProxyHandler(proxy):
             carrier = {}
             traceparent_header = self.headers.get("traceparent")
             if traceparent_header:
-                carrier = {"traceparent": int(traceparent_header, 16)}
+                carrier = {"traceparent": traceparent_header}
+                print("Carrier with adapted trace parent:", carrier)
             ctx = TraceContextTextMapPropagator().extract(carrier=carrier)
+            print("Current root context", ctx)
 
             with tracer.start_as_current_span("root", ctx) as _:
                 with tracer.start_as_current_span("sleep") as span:
@@ -70,12 +72,11 @@ def getProxyHandler(proxy):
                     self.send_response(200)
                     span.set_attribute("proxy.url", proxy)
                     # Propagate trace id
-                    traceparent_id = span.get_span_context().trace_id
-                    self.send_header("traceparent", traceparent_id)
+                    carrier = {}
+                    TraceContextTextMapPropagator().inject(carrier)
+                    self.send_header("traceparent", carrier["traceparent"])
                     self.end_headers()
-                    req = urllib.request.Request(
-                        proxy, headers={"traceparent": traceparent_id}
-                    )
+                    req = urllib.request.Request(proxy, headers=carrier)
                     self.copyfile(urllib.request.urlopen(req), self.wfile)
 
     return proxyHandler
